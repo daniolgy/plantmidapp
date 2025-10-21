@@ -12,30 +12,30 @@ struct ContentView: View {
                             .foregroundColor(.white)
                     }
                     .padding(.top, 20)
-                        .padding(.bottom, 7)
-                        .padding(.trailing, 200)
-
+                    .padding(.bottom, 7)
+                    .padding(.trailing, 200)
                     
-                       
-
-                        
+                    
+                    
+                    
+                    
                     Rectangle() //divider
                         .fill(Color.white.opacity(0.2))
                         .frame(height: 2) // set thickness here
                         .padding(.bottom, 70)
-
-
+                    
+                    
                     
                     Image("plant image") // name of your image asset
                         .resizable()
-                           .scaledToFit()
-                           .frame(width: 164, height: 200)
-                       
+                        .scaledToFit()
+                        .frame(width: 164, height: 200)
+                    
                         .padding(.bottom, 30)
                     Text("Start your plant journey!")
                         .font(.system(size: 25, weight: .bold))
                         .padding(.bottom, 20)
-
+                    
                     Text("Now all your plants will be in one place and we will help you take care of them :)🪴")
                         .font(.system(size: 16, weight: .regular))
                         .foregroundColor(Color(Color(red: 159/255, green: 159/255, blue: 145/255)))
@@ -53,26 +53,26 @@ struct ContentView: View {
                         .background(
                             RoundedRectangle(cornerRadius: 1000)
                                 .fill(Color(red: 92/255, green: 244/255, blue: 198/255))
-                                //.shadow(color: Color.white.opacity(1), radius: 0.25, x: 2, y: 2)
+                            //.shadow(color: Color.white.opacity(1), radius: 0.25, x: 2, y: 2)
                         ) .glassEffect(.clear)
                 }
                 .sheet(isPresented: $setReminderSheet) {
                     ReminderView()
                 }
-                }
-
-                    
-                }
-                .padding(.bottom, 150)
-                        
-                    }
-
-                           }
+            }
             
-
-
-
+            
+        }
+        .padding(.bottom, 150)
         
+    }
+    
+}
+
+
+
+
+
 #Preview {
     ContentView()
         .preferredColorScheme(.dark)
