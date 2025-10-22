@@ -1,15 +1,7 @@
-//
-//  ReminderView.swift
-//  plant_midapp
-//
-//  Created by Danah Aleyadhi on 20/10/2025.
-//
-
 import SwiftUI
 
 struct ReminderView: View {
-    
-    
+    @State private var goToMainPage = false
     @Environment(\.dismiss) var dismiss
     
     @State private var plantName = ""
@@ -27,27 +19,36 @@ struct ReminderView: View {
     let waterAmounts = ["20–50 ml", "50–100 ml", "100–200 ml", "200–300 ml"]
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 24) {
-                // Plant Name Field
-                TextField("Plant Name", text: $plantName)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(16)
-                    .padding(.horizontal)
-                
-                // Room & Light
-                VStack(spacing: 12) {
-                    PickerRow(title: "Room", selection: $selectedRoom, options: rooms)
-                    PickerRow(title: "Light", selection: $selectedLight, options: lights)
+                // Plant Name
+                HStack {
+                    Text("Plant Name")
+                        .foregroundColor(.white)
+                    TextField("Pothos", text: $plantName)
+                        .foregroundColor(.grayLightest)
                 }
+                .padding()
+                .background(Color(.grayLight))
+                .cornerRadius(30)
                 .padding(.horizontal)
                 
-                // Watering Info
-                VStack(spacing: 12) {
+                // Room + Light
+                VStack(spacing: 0) {
+                    PickerRow(title: "Room", selection: $selectedRoom, options: rooms)
+                    Divider().background(Color.gray.opacity(0.4)).padding(.horizontal)
+                    PickerRow(title: "Light", selection: $selectedLight, options: lights)
+                }
+                .background(RoundedRectangle(cornerRadius: 30).fill(Color(.grayLight)))
+                .padding(.horizontal)
+                
+                // Watering + Amount
+                VStack(spacing: 0) {
                     PickerRow(title: "Watering Days", selection: $selectedWatering, options: wateringDays)
+                    Divider().background(Color.gray.opacity(0.4)).padding(.horizontal)
                     PickerRow(title: "Water", selection: $selectedWaterAmount, options: waterAmounts)
                 }
+                .background(RoundedRectangle(cornerRadius: 30).fill(Color(.grayLight)))
                 .padding(.horizontal)
                 
                 Spacer()
@@ -58,60 +59,63 @@ struct ReminderView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(action: { dismiss() }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
+                        Image(systemName: "xmark")
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        // Save action
-                    }) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.title2)
-                            .foregroundColor((Color(red: 92/255, green: 244/255, blue: 198/255)))
+                    Button(action: { goToMainPage = true }) {
+                        Image(systemName: "checkmark")
                     }
                 }
             }
-            .background(Color.black.ignoresSafeArea())
+            .background(Color.grayDark.ignoresSafeArea())
             .preferredColorScheme(.dark)
+            // Navigate to MainPage
+            .navigationDestination(isPresented: $goToMainPage) {
+                mainPage()
+            }
         }
     }
 }
 
+// MARK: - PickerRow
 struct PickerRow: View {
     let title: String
     @Binding var selection: String
     let options: [String]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Picker(selection: $selection, label: Label(title, systemImage: iconFor(title))) {
+        HStack {
+            Label(title, systemImage: iconFor(title))
+                .foregroundColor(.white)
+            Spacer()
+            Menu {
                 ForEach(options, id: \.self) { option in
-                    Text(option).tag(option)
+                    Button(option) { selection = option }
+                }
+            } label: {
+                HStack {
+                    Text(selection).foregroundColor(Color(.grayLightest))
+                    Image(systemName: "chevron.down").foregroundColor(.gray)
                 }
             }
-            .pickerStyle(.menu)
-            .tint(.gray)
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(16)
+        .padding(.horizontal)
+        .padding(.vertical, 14)
     }
     
     func iconFor(_ title: String) -> String {
         switch title {
         case "Room": return "paperplane"
         case "Light": return "sun.max"
-        case "Watering Days", "Water": return "drop"
+        case "Watering Days": return "drop"
+        case "Water": return "drop"
         default: return "circle"
         }
     }
 }
 
+// MARK: - Preview
 #Preview {
     ReminderView()
 }
-
-
-
-
