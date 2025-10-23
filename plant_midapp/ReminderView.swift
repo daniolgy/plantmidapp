@@ -1,15 +1,15 @@
 import SwiftUI
 
 struct ReminderView: View {
-    @State private var goToMainPage = false
-    @Environment(\.dismiss) var dismiss
-    
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var store: PlantStore
+
     @State private var plantName = ""
     @State private var selectedRoom = "Bedroom"
     @State private var selectedLight = "Full Sun"
     @State private var selectedWatering = "Every day"
     @State private var selectedWaterAmount = "20–50 ml"
-    
+
     let rooms = ["Bedroom", "Living Room", "Kitchen", "Balcony", "Bathroom"]
     let lights = ["Full Sun", "Partial Sun", "Low Light"]
     let wateringDays = [
@@ -17,7 +17,11 @@ struct ReminderView: View {
         "Once a week", "Every 10 days", "Every 2 weeks"
     ]
     let waterAmounts = ["20–50 ml", "50–100 ml", "100–200 ml", "200–300 ml"]
-    
+
+    var nameIsValid: Bool {
+        !plantName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
@@ -27,12 +31,13 @@ struct ReminderView: View {
                         .foregroundColor(.white)
                     TextField("Pothos", text: $plantName)
                         .foregroundColor(.grayLightest)
+                        .submitLabel(.done)
                 }
                 .padding()
                 .background(Color(.grayLight))
                 .cornerRadius(30)
                 .padding(.horizontal)
-                
+
                 // Room + Light
                 VStack(spacing: 0) {
                     PickerRow(title: "Room", selection: $selectedRoom, options: rooms)
@@ -41,7 +46,7 @@ struct ReminderView: View {
                 }
                 .background(RoundedRectangle(cornerRadius: 30).fill(Color(.grayLight)))
                 .padding(.horizontal)
-                
+
                 // Watering + Amount
                 VStack(spacing: 0) {
                     PickerRow(title: "Watering Days", selection: $selectedWatering, options: wateringDays)
@@ -50,7 +55,7 @@ struct ReminderView: View {
                 }
                 .background(RoundedRectangle(cornerRadius: 30).fill(Color(.grayLight)))
                 .padding(.horizontal)
-                
+
                 Spacer()
             }
             .padding(.top, 24)
@@ -63,18 +68,29 @@ struct ReminderView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: { goToMainPage = true }) {
+                    Button(action: saveAndDismiss) {
                         Image(systemName: "checkmark")
                     }
+                    .disabled(!nameIsValid)
+                    .opacity(nameIsValid ? 1.0 : 0.4)
                 }
             }
             .background(Color.grayDark.ignoresSafeArea())
             .preferredColorScheme(.dark)
-            // Navigate to MainPage
-            .navigationDestination(isPresented: $goToMainPage) {
-                mainPage()
-            }
         }
+    }
+
+    private func saveAndDismiss() {
+        guard nameIsValid else { return }
+        let newPlant = Plant(
+            name: plantName.trimmingCharacters(in: .whitespacesAndNewlines),
+            room: selectedRoom,
+            light: selectedLight,
+            wateringDays: selectedWatering,
+            waterAmount: selectedWaterAmount
+        )
+        store.add(newPlant)
+        dismiss()
     }
 }
 
@@ -83,7 +99,7 @@ struct PickerRow: View {
     let title: String
     @Binding var selection: String
     let options: [String]
-    
+
     var body: some View {
         HStack {
             Label(title, systemImage: iconFor(title))
@@ -103,7 +119,7 @@ struct PickerRow: View {
         .padding(.horizontal)
         .padding(.vertical, 14)
     }
-    
+
     func iconFor(_ title: String) -> String {
         switch title {
         case "Room": return "paperplane"
@@ -118,4 +134,5 @@ struct PickerRow: View {
 // MARK: - Preview
 #Preview {
     ReminderView()
+        .environmentObject(PlantStore())
 }
