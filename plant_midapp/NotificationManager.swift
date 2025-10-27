@@ -26,12 +26,14 @@ final class NotificationManager {
 
     // MARK: - Public API
 
+    // Note: hour/minute are no longer used to anchor scheduling.
+    // The trigger will start from "now" (when this is called), matching the user's save time.
     func scheduleNotifications(for plant: Plant, at hour: Int = 9, minute: Int = 0) {
         // Cancel existing for id, then reschedule
         cancelNotifications(for: plant.id)
 
         // Create request(s) based on wateringDays
-        let requests = buildRequests(for: plant, at: hour, minute: minute)
+        let requests = buildRequests(for: plant)
 
         let center = UNUserNotificationCenter.current()
         for req in requests {
@@ -95,9 +97,10 @@ final class NotificationManager {
 
     // MARK: - Helpers
 
-    private func buildRequests(for plant: Plant, at hour: Int, minute: Int) -> [UNNotificationRequest] {
+    private func buildRequests(for plant: Plant) -> [UNNotificationRequest] {
         let title = "Hey! Let's water \(plant.name)!"
-        let body = "Time to give \(plant.name) a sip 💧"
+        let amountText = plant.waterAmount.isEmpty ? "" : " • \(plant.waterAmount)"
+        let body = "Time to give \(plant.name) a sip 💧\(amountText)"
 
         let schedule = parseSchedule(from: plant.wateringDays)
 
@@ -108,12 +111,14 @@ final class NotificationManager {
             return [request(id: identifier(for: plant.id, suffix: "every-10-seconds-once"), title: title, body: body, trigger: trigger)]
 
         case .daily:
-            let trigger = dailyTrigger(hour: hour, minute: minute, repeats: true)
+            // Repeat every 24h from now (user's save time)
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(24 * 3600), repeats: true)
             return [request(id: identifier(for: plant.id, suffix: "daily"), title: title, body: body, trigger: trigger)]
 
         case .everyNDays(let n):
             if n == 7 {
-                let trigger = weeklyTrigger(weekday: nil, hour: hour, minute: minute)
+                // Treat as weekly interval from now
+                let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(7 * 24 * 3600), repeats: true)
                 return [request(id: identifier(for: plant.id, suffix: "weekly-7"), title: title, body: body, trigger: trigger)]
             } else if n == 14 {
                 let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(14 * 24 * 3600), repeats: true)
@@ -125,7 +130,8 @@ final class NotificationManager {
             }
 
         case .weekly:
-            let trigger = weeklyTrigger(weekday: nil, hour: hour, minute: minute)
+            // Repeat every 7 days from now (user's save time)
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(7 * 24 * 3600), repeats: true)
             return [request(id: identifier(for: plant.id, suffix: "weekly"), title: title, body: body, trigger: trigger)]
 
         case .biweekly:
@@ -133,7 +139,8 @@ final class NotificationManager {
             return [request(id: identifier(for: plant.id, suffix: "biweekly"), title: title, body: body, trigger: trigger)]
 
         case .unknown:
-            let trigger = dailyTrigger(hour: hour, minute: minute, repeats: true)
+            // Fallback: repeat daily from now
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(24 * 3600), repeats: true)
             return [request(id: identifier(for: plant.id, suffix: "fallback-daily"), title: title, body: body, trigger: trigger)]
         }
     }
@@ -188,26 +195,6 @@ final class NotificationManager {
         default:
             return .unknown
         }
-    }
-
-    // MARK: - Triggers
-
-    private func dailyTrigger(hour: Int, minute: Int, repeats: Bool) -> UNCalendarNotificationTrigger {
-        var comps = DateComponents()
-        comps.hour = hour
-        comps.minute = minute
-        return UNCalendarNotificationTrigger(dateMatching: comps, repeats: repeats)
-    }
-
-    private func weeklyTrigger(weekday: Int?, hour: Int, minute: Int) -> UNCalendarNotificationTrigger {
-        var comps = DateComponents()
-        comps.hour = hour
-        comps.minute = minute
-        // If weekday not provided, use the current weekday as anchor
-        let calendar = Calendar.current
-        let wd = weekday ?? calendar.component(.weekday, from: Date())
-        comps.weekday = wd
-        return UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
     }
 
     // MARK: - Request builder

@@ -6,9 +6,18 @@
 //
 
 import SwiftUI
+import UserNotifications
+//
+
 
 @main
-struct plant_midappApp: App {
+struct PlantMidappApp: App {
+    init() {
+        // Let notifications show while app is open
+        UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
+        NotificationManager.shared.requestAuthorization()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

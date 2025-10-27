@@ -39,6 +39,8 @@ final class PlantStore: ObservableObject {
 
     func add(_ plant: Plant) {
         plants.append(plant)
+        // Schedule notifications when a plant is added (default 9:00)
+        NotificationManager.shared.scheduleNotifications(for: plant, at: 9, minute: 0)
     }
 
     func toggleWatered(for plantID: UUID) {
@@ -56,8 +58,9 @@ final class PlantStore: ObservableObject {
     // Remove a plant by id
     func removePlant(id: UUID) {
         if let index = plants.firstIndex(where: { $0.id == id }) {
+            // Cancel any pending notifications for this plant
+            NotificationManager.shared.cancelNotifications(for: plants[index].id)
             plants.remove(at: index)
         }
     }
 }
-

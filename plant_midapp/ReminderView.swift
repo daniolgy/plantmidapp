@@ -146,7 +146,7 @@ struct ReminderView: View {
                 wateringDays: selectedWatering,
                 waterAmount: selectedWaterAmount
             )
-            store.add(newPlant)
+            store.add(newPlant) // schedules notifications via PlantStore.add
 
         case .edit(let existing):
             // Update the existing plant in-place
@@ -158,6 +158,9 @@ struct ReminderView: View {
                 updated.wateringDays = selectedWatering
                 updated.waterAmount = selectedWaterAmount
                 store.plants[idx] = updated
+
+                // Re-schedule notifications for the updated plant
+                NotificationManager.shared.scheduleNotifications(for: updated, at: 9, minute: 0)
             }
         }
 
