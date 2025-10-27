@@ -1,8 +1,16 @@
 import SwiftUI
 
+enum ReminderMode {
+    case create
+    case edit(existing: Plant)
+}
+
 struct ReminderView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var store: PlantStore
+
+    // Mode controls whether we create or edit
+    let mode: ReminderMode
 
     @State private var plantName = ""
     @State private var selectedRoom = "Bedroom"
@@ -13,13 +21,22 @@ struct ReminderView: View {
     let rooms = ["Bedroom", "Living Room", "Kitchen", "Balcony", "Bathroom"]
     let lights = ["Full Sun", "Partial Sun", "Low Light"]
     let wateringDays = [
-        "Every day", "Every 2 days", "Every 3 days",
-        "Once a week", "Every 10 days", "Every 2 weeks"
+        "Every day",
+        "Every 2 days",
+        "Every 3 days",
+        "Once a week",
+        "Every 10 days",
+        "Every 2 weeks",
+        "Every 10 seconds (test)" // Added test option
     ]
     let waterAmounts = ["20–50 ml", "50–100 ml", "100–200 ml", "200–300 ml"]
 
     var nameIsValid: Bool {
         !plantName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    init(mode: ReminderMode = .create) {
+        self.mode = mode
     }
 
     var body: some View {
@@ -56,10 +73,28 @@ struct ReminderView: View {
                 .background(RoundedRectangle(cornerRadius: 30).fill(Color(.grayLight)))
                 .padding(.horizontal)
 
+                // Delete button only in edit mode
+                if case let .edit(existing) = mode {
+                    Button(role: .destructive) {
+                        store.removePlant(id: existing.id)
+                        dismiss()
+                    } label: {
+                        Text("Delete Reminder")
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundColor(.red)
+                            .frame(width: 370, height: 52) // exact size
+                            .background(
+                                Capsule().fill(Color.grayLight)
+                            )
+                    }
+                    // remove horizontal padding so visual width is exactly 370
+                    .padding(.top, 8)
+                }
+
                 Spacer()
             }
             .padding(.top, 24)
-            .navigationTitle("Set Reminder")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -77,19 +112,55 @@ struct ReminderView: View {
             }
             .background(Color.grayDark.ignoresSafeArea())
             .preferredColorScheme(.dark)
+            .onAppear(perform: populateIfEditing)
+        }
+    }
+
+    private var navigationTitle: String {
+        switch mode {
+        case .create: return "Set Reminder"
+        case .edit: return "Edit Reminder"
+        }
+    }
+
+    private func populateIfEditing() {
+        if case let .edit(existing) = mode {
+            plantName = existing.name
+            selectedRoom = existing.room
+            selectedLight = existing.light
+            selectedWatering = existing.wateringDays
+            selectedWaterAmount = existing.waterAmount
         }
     }
 
     private func saveAndDismiss() {
         guard nameIsValid else { return }
-        let newPlant = Plant(
-            name: plantName.trimmingCharacters(in: .whitespacesAndNewlines),
-            room: selectedRoom,
-            light: selectedLight,
-            wateringDays: selectedWatering,
-            waterAmount: selectedWaterAmount
-        )
-        store.add(newPlant)
+        let trimmedName = plantName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        switch mode {
+        case .create:
+            let newPlant = Plant(
+                name: trimmedName,
+                room: selectedRoom,
+                light: selectedLight,
+                wateringDays: selectedWatering,
+                waterAmount: selectedWaterAmount
+            )
+            store.add(newPlant)
+
+        case .edit(let existing):
+            // Update the existing plant in-place
+            if let idx = store.plants.firstIndex(where: { $0.id == existing.id }) {
+                var updated = store.plants[idx]
+                updated.name = trimmedName
+                updated.room = selectedRoom
+                updated.light = selectedLight
+                updated.wateringDays = selectedWatering
+                updated.waterAmount = selectedWaterAmount
+                store.plants[idx] = updated
+            }
+        }
+
         dismiss()
     }
 }
@@ -133,6 +204,6 @@ struct PickerRow: View {
 
 // MARK: - Preview
 #Preview {
-    ReminderView()
+    ReminderView(mode: .create)
         .environmentObject(PlantStore())
 }

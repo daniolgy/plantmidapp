@@ -3,11 +3,14 @@ import SwiftUI
 struct MainPlantsView: View {
     @EnvironmentObject private var store: PlantStore
     @Binding var setReminderSheet: Bool
-    
+
+    // New: selected plant to edit
+    @State private var selectedPlantForEdit: Plant?
+
     private var isAllDone: Bool {
         !store.plants.isEmpty && store.progress >= 1.0
     }
-    
+
     var body: some View {
         ZStack {
             VStack(alignment: .leading, spacing: 16) {
@@ -20,17 +23,17 @@ struct MainPlantsView: View {
                 }
                 .padding(.top, 20)
                 .padding(.horizontal)
-                
+
                 Divider()
                     .background(Color.white)
-                
+
                 // Status
                 Text(isAllDone ? "" : "Your plants are waiting for a sip 💦")
                     .foregroundColor(.white)
                     .font(.system(size: 18, weight: .regular))
                     .padding(.horizontal)
                     .frame(maxWidth: .infinity, alignment: .init(horizontal: .center, vertical: .center))
-                
+
                 // Progress bar (hidden when all done)
                 if !isAllDone {
                     ProgressView(value: store.progress)
@@ -38,7 +41,7 @@ struct MainPlantsView: View {
                         .tint(Color(red: 92/255, green: 244/255, blue: 198/255))
                         .padding(.horizontal)
                 }
-                
+
                 if isAllDone {
                     // Completed state
                     CompletedStateView()
@@ -49,14 +52,19 @@ struct MainPlantsView: View {
                     List {
                         ForEach(store.plants) { plant in
                             VStack(spacing: 0) {
-                                PlantRow(plant: plant) {
-                                    withAnimation(.easeInOut) {
-                                        store.toggleWatered(for: plant.id)
+                                // Make the entire row tappable for editing
+                                Button {
+                                    selectedPlantForEdit = plant
+                                } label: {
+                                    PlantRow(plant: plant) {
+                                        withAnimation(.easeInOut) {
+                                            store.toggleWatered(for: plant.id)
+                                        }
                                     }
+                                    .opacity(plant.isWateredToday ? 0.45 : 1.0)
                                 }
-                                .opacity(plant.isWateredToday ? 0.45 : 1.0) // dim completed rows
-                                
-                                // Keep your custom divider look between rows
+                                .buttonStyle(.plain)
+
                                 Divider()
                                     .background(Color.white)
                                     .listRowSeparator(.hidden)
@@ -75,11 +83,11 @@ struct MainPlantsView: View {
                         }
                     }
                     .listStyle(.plain)
-                    .scrollContentBackground(.hidden) // hide default list background
-                    .background(Color.black) // keep your dark background
+                    .scrollContentBackground(.hidden)
+                    .background(Color.black)
                     .padding(.top, 8)
                 }
-                
+
                 Spacer()
             }
         }
@@ -99,6 +107,11 @@ struct MainPlantsView: View {
             .padding(.trailing, 24)
             .padding(.bottom, 24)
         }
+        // Present edit sheet when a plant is selected
+        .sheet(item: $selectedPlantForEdit) { plant in
+            ReminderView(mode: .edit(existing: plant))
+                .environmentObject(store)
+        }
         .preferredColorScheme(.dark)
         .background(Color.black)
     }
@@ -107,7 +120,7 @@ struct MainPlantsView: View {
 private struct PlantRow: View {
     let plant: Plant
     let onToggle: () -> Void
-    
+
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
             // Circular checkbox
@@ -126,32 +139,30 @@ private struct PlantRow: View {
             .buttonStyle(.plain)
             .padding(.leading, 16)
             .padding(.top, 26)
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 // Location line
                 HStack(spacing: 6) {
                     Image(systemName: "paperplane")
                         .foregroundColor(.gray)
                         .font(.system(size: 15, weight: .regular))
-                    
+
                     Text("in \(plant.room)")
                         .foregroundColor(.gray)
                         .font(.system(size: 15, weight: .regular))
                 }
-                
+
                 // Plant name
                 Text(plant.name)
                     .foregroundColor(.white)
                     .font(.system(size: 28, weight: .regular))
-                
+
                 // Tags
                 HStack(spacing: 12) {
-                    // Sun tag (default yellow icon, neutral pill)
                     TagView(
                         icon: "sun.max",
                         text: plant.light
                     )
-                    // Drop tag (custom aqua icon, aqua-tinted pill)
                     TagView(
                         icon: "drop",
                         text: plant.waterAmount,
@@ -161,7 +172,7 @@ private struct PlantRow: View {
                     )
                 }
             }
-            
+
             Spacer()
         }
         .padding(.vertical, 16)
@@ -171,10 +182,10 @@ private struct PlantRow: View {
 private struct TagView: View {
     let icon: String
     let text: String
-    var iconColor: Color = Color(.goldPlant) // default for sun
+    var iconColor: Color = Color(.goldPlant)
     var textColor: Color = .goldPlant
     var backgroundColor: Color = Color.grayKindaDark
-    
+
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
@@ -193,18 +204,17 @@ private struct TagView: View {
 private struct CompletedStateView: View {
     var body: some View {
         VStack(spacing: 16) {
-            // Replace "done image" with your actual asset name
             Image("done image")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 219, height: 227)
                 .padding(.top, 80)
-            
+
             Text("All Done! 🎉")
                 .foregroundColor(.white)
                 .font(.system(size: 28, weight: .bold))
                 .multilineTextAlignment(.center)
-            
+
             Text("All Reminders Completed")
                 .foregroundColor(.gray)
                 .font(.system(size: 18, weight: .regular))
@@ -215,7 +225,6 @@ private struct CompletedStateView: View {
 }
 
 #Preview {
-    // Preview with sample data so you can open this view directly.
     let sampleStore = PlantStore()
     sampleStore.plants = [
         Plant(name: "Pothos", room: "Living Room", light: "Low Light", wateringDays: "Every 3 days", waterAmount: "50–100 ml", isWateredToday: true),
@@ -225,3 +234,4 @@ private struct CompletedStateView: View {
         .environmentObject(sampleStore)
         .preferredColorScheme(.dark)
 }
+

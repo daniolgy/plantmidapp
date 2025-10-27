@@ -73,7 +73,7 @@ struct ContentView: View {
                 hasCompletedSetup = true
             }
         }) {
-            ReminderView()
+            ReminderView(mode: .create)
                 .environmentObject(store)
         }
         .preferredColorScheme(.dark)
@@ -87,3 +87,4 @@ struct ContentView: View {
     ContentView()
         .preferredColorScheme(.dark)
 }
+
