@@ -52,4 +52,12 @@ final class PlantStore: ObservableObject {
             plants[i].isWateredToday = false
         }
     }
+
+    // Remove a plant by id
+    func removePlant(id: UUID) {
+        if let index = plants.firstIndex(where: { $0.id == id }) {
+            plants.remove(at: index)
+        }
+    }
 }
+
